@@ -6,6 +6,7 @@ import { Poppins_400Regular, useFonts } from '@expo-google-fonts/poppins';
 
 import MainLayout from './MainLayout/MainLayout';
 import Login from './login/login';
+import AppText from './Forms/AppText';
 
 export default function HomeScreen() { 
 
@@ -14,12 +15,12 @@ export default function HomeScreen() {
   });
 
   if (!fontsLoaded) {
-    return <>Loading</>; // or a custom loading screen
+    return <AppText>Loading</AppText>; // or a custom loading screen
   }
 
   return (
     <Provider store={store}>
-      <Stack.Screen options={{ headerBackVisible: false }} />
+      <Stack.Screen options={{ headerBackVisible: false, headerShown: false }} />
       <MainLayout><Login /></MainLayout>
     </Provider>
   );

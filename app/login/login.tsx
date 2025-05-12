@@ -99,6 +99,7 @@ const Login:FC<PageProps> = ({ navigation }) => {
           }
         },
       }) as unknown as { isLogin: boolean, isOtpSent: boolean, isVerified: boolean };
+      // alert(JSON.stringify(response));
       if(response?.isOtpSent) {
         setIsOtpScreen(true);
         setIsEmailScreen(false);

@@ -42,6 +42,7 @@ const api =
       });
 
       if (dispatchType === "accountCreation") {
+        alert('api request');
         dispatch({
           type: "global/globalMessage",
           payload: {
