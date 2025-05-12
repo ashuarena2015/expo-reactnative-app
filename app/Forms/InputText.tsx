@@ -25,11 +25,11 @@ export default function InputText(props: InputTextProps) {
           placeholderTextColor="#999"
           onChangeText={(text: string) => props?.handleChange(props?.name, text)}
       />
-      <Text
+      {props?.errorMessage ? <Text
         style={[{ fontFamily: 'Poppins_400Regular', color: '#C5172E', marginTop: 8 }]}
       >
           {props?.errorMessage}
-      </Text>
+      </Text> : null}
     </View>
   );
 }
@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
         color: 'black',
         fontSize: 16,
         fontWeight: '400',
+        marginBottom: 8
     },
     labelText: {
         fontSize: 16,

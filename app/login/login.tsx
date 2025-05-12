@@ -15,8 +15,8 @@ import {
   View,
   ActivityIndicator,
   RefreshControl,
-  TextInput,
   Button,
+  Pressable
 } from 'react-native';
 import AppText from '../Forms/AppText';
 import { useDispatch, useSelector } from 'react-redux';
@@ -48,6 +48,10 @@ const Login:FC<PageProps> = ({ navigation }) => {
     setRefreshing(true);
     setTimeout(() => {
       setRefreshing(false);
+      setIsEmailScreen(true);
+      setIsOtpScreen(false);
+      setIsPasswordScreen(false);
+      setIsAccountVerified(false);
     }, 2000);
   }, []);
 
@@ -77,7 +81,7 @@ const Login:FC<PageProps> = ({ navigation }) => {
     return true;
   };
   
-  const saveTokenSecurely = async (key, value) => {
+  const saveTokenSecurely = async (key: string, value: string) => {
     return await SecureStore.setItemAsync(key, value);
   }
 
@@ -99,18 +103,22 @@ const Login:FC<PageProps> = ({ navigation }) => {
           }
         },
       }) as unknown as { isLogin: boolean, isOtpSent: boolean, isVerified: boolean };
-      // alert(JSON.stringify(response));
       if(response?.isOtpSent) {
         setIsOtpScreen(true);
         setIsEmailScreen(false);
+        setIsScreenLoading(false);
+        return;
       }
       if(response?.isVerified) {
+        console.log(`Saved!\nEmail: ${formInput?.email}\nPassword: ${formInput?.password}`);
         if (Platform.OS !== 'web') {
           alert('password saved for mobile authentication')
+          alert(JSON.stringify(formInput?.password));
           await saveTokenSecurely('password', formInput?.password);
         }
         setIsPasswordScreen(true);
         setIsEmailScreen(false);
+        setIsScreenLoading(false);
       }
       setIsScreenLoading(false);
     }
@@ -146,51 +154,28 @@ const Login:FC<PageProps> = ({ navigation }) => {
     setIsScreenLoading(false);
   };
   
-  // PIN Authentication logic
-  // const [fallbackVisible, setFallbackVisible] = useState(false);
-  // const [pin, setPin] = useState('');
+  // Biometrics Authentication logic
+
   const [authenticated, setAuthenticated] = useState(false);
 
   const handleBiometricAuth = async () => {
 
-    // only If fallback integrate
-    // const compatible = await LocalAuthentication.hasHardwareAsync();
-    // if (!compatible) {
-    //   alert('Error, Your device does not support biometrics.');
-    //   return setFallbackVisible(true);
-    // }
-
-    // const enrolled = await LocalAuthentication.isEnrolledAsync();
-    // if (!enrolled) {
-    //   alert('No biometrics are enrolled.');
-    //   return setFallbackVisible(true);
-    // }
-
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Authenticate',
       fallbackLabel: 'Use Passcode',
+      disableDeviceFallback: false,
     });
     if (result.success) {
       setAuthenticated(true);
-      alert('Authenticated with biometrics!');
       const responseEmailSecure = await SecureStore.getItemAsync('email');
-      alert(JSON.stringify(responseEmailSecure));
       const responsePasswordSecure = await SecureStore.getItemAsync('password');
-      alert(JSON.stringify(responsePasswordSecure));
+    
+      alert(`Authenticated!\nEmail: ${responseEmailSecure}\nPassword: ${responsePasswordSecure}`);
     } else {
-      alert('Please use valid pin');
+      alert('Please use a valid pin');
     }
-  };
 
-  // const handlePINLogin = () => {
-  //   const correctPIN = '1234'; // Replace with your actual logic (e.g. secure storage or backend)
-  //   if (pin === correctPIN) {
-  //     setAuthenticated(true);
-  //     alert('Success, Authenticated with PIN!');
-  //   } else {
-  //     alert('Error, Incorrect PIN.');
-  //   }
-  // };
+  };
   
   return (
     <KeyboardAvoidingView
@@ -271,33 +256,23 @@ const Login:FC<PageProps> = ({ navigation }) => {
             >
               <AppText style={styles.buttonText}>Continue with Google</AppText>
             </TouchableOpacity>
-            <View onTouchStart={handleBiometricAuth} style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
+            <Pressable
+              onPress={handleBiometricAuth}
+              style={({ pressed }) => [
+                {
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  marginTop: 20,
+                  opacity: pressed ? 0.6 : 1,
+                  transform: [{ scale: pressed ? 0.95 : 1 }],
+                },
+              ]}
+            >
               <Icon name="user-lock" size={50} color="#27548A" />
+            </Pressable>
+            <View style={{ alignItems: 'center' }}>
+              <AppText>Try login with authentication</AppText>
             </View>
-            {/* In case of pin authentication failed */}
-            {/* {fallbackVisible ?
-              <>
-                  <View style={{ marginTop: 20 }}>
-                    <AppText>Or enter your PIN:</AppText>
-                    <TextInput
-                      secureTextEntry
-                      keyboardType="numeric"
-                      value={pin}
-                      onChangeText={setPin}
-                      placeholder="Enter PIN"
-                      style={{
-                        borderWidth: 1,
-                        borderColor: '#ccc',
-                        padding: 10,
-                        marginTop: 10,
-                        borderRadius: 5,
-                      }}
-                    />
-                    <Button title="Login with PIN" onPress={handlePINLogin} />
-                  </View>
-              </>
-              : null
-            } */}
           </View>
           <AppText style={{ color: '#fff' }}>By continuing you agree to Terms of Services and Privacy Policy</AppText>
         </View>

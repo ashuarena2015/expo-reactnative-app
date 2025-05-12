@@ -42,7 +42,6 @@ const api =
       });
 
       if (dispatchType === "accountCreation") {
-        alert('api request');
         dispatch({
           type: "global/globalMessage",
           payload: {
@@ -60,7 +59,6 @@ const api =
         if(!isVerified && email) {
           return { isOtpSent: true };
         }
-        console.log('3esponse?.data', response?.data);
         return { isVerified: isVerified };
       }
       if (dispatchType === "userInfo") {
