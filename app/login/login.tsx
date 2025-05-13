@@ -160,7 +160,10 @@ const Login:FC<PageProps> = () => {
     if (result.success) {
       setAuthenticated(true);
       const savedEmail = await SecureStore.getItemAsync('email');
-      alert(JSON.stringify(savedEmail));
+      const userVerified = await SecureStore.getItemAsync('isUserVerified');
+      if(savedEmail && userVerified) {
+        router.push('/one');
+      }
     } else {
       alert('Please use a valid pin');
     }

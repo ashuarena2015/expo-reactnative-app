@@ -20,7 +20,7 @@ export default function HomeScreen() {
 
   return (
     <Provider store={store}>
-      <Stack.Screen options={{ headerBackVisible: false, headerShown: false }} />
+      <Stack.Screen options={{ headerBackVisible: false, headerStyle: StyleSheet.create({ header: { backgroundColor: '#fff', color: '#fff' } }).header, headerShown: false }} />
       <MainLayout><Login /></MainLayout>
     </Provider>
   );
