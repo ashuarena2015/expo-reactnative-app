@@ -42,8 +42,6 @@ const Login:FC<PageProps> = () => {
   const [isScreenLoading, setIsScreenLoading] = useState(false);
   const [isEmailScreen, setIsEmailScreen] = useState(true);
   const [isOtpScreen, setIsOtpScreen] = useState(false);
-  const [isPasswordScreen, setIsPasswordScreen] = useState(false);
-  const [isAccountVerified, setIsAccountVerified] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -54,14 +52,11 @@ const Login:FC<PageProps> = () => {
       setRefreshing(false);
       setIsEmailScreen(true);
       setIsOtpScreen(false);
-      setIsPasswordScreen(false);
-      setIsAccountVerified(false);
     }, 2000);
   }, []);
 
   const [formInput, setFormInput] = useState({
       email: '',
-      password: '',
       otp: ''
   });
 
@@ -102,21 +97,15 @@ const Login:FC<PageProps> = () => {
           body: {
             userInfo: {
               email: formInput?.email,
-              password: formInput?.password,
             }
           }
         },
-      }) as unknown as { isLogin: boolean, isOtpSent: boolean, isVerified: boolean };
+      }) as unknown as { isLogin: boolean, isOtpSent: boolean, isLoginOtpSent: boolean };
       if(response?.isOtpSent) {
         setIsOtpScreen(true);
         setIsEmailScreen(false);
         setIsScreenLoading(false);
         return;
-      }
-      if(response?.isVerified) {
-        setIsPasswordScreen(true);
-        setIsEmailScreen(false);
-        setIsScreenLoading(false);
       }
       setIsScreenLoading(false);
     }
@@ -135,30 +124,22 @@ const Login:FC<PageProps> = () => {
         body: {
           otp: formInput?.otp,
           email: formInput?.email,
-          password: formInput?.password
         }
       },
     }) as unknown as { isLogin: boolean, isVerified: boolean, token: string };
 
-    if (response?.isVerified) {
+    if (response?.token) {
       setFormInput((prevState) => ({
         ...prevState,
         otp: ''
       }));
       if (Platform.OS !== 'web') {
-        await saveTokenSecurely('email', formInput?.email);
-      }
-      setIsScreenLoading(false);
-      setIsAccountVerified(true);
-      setIsOtpScreen(false);
-      setIsEmailScreen(false);
-    }
-
-    if (response?.token) {
-      if (Platform.OS !== 'web') {
-        await saveTokenSecurely('password', formInput?.password);
+        await saveTokenSecurely('isUserVerified', 'true');
       }
       setAuthenticated(false);
+      setIsScreenLoading(false);
+      setIsOtpScreen(false);
+      setIsEmailScreen(false);
       router.push('two');
     }
 
@@ -174,25 +155,35 @@ const Login:FC<PageProps> = () => {
       disableDeviceFallback: false,
     });
     if (result.success) {
-      const responseEmailSecure = await SecureStore.getItemAsync('email');
-      const responsePasswordSecure = await SecureStore.getItemAsync('password');
-      if(responseEmailSecure && responsePasswordSecure) {
-        setFormInput((prevState) => ({
-          ...prevState,
-          email: responseEmailSecure || '',
-          password: responsePasswordSecure || ''
-        }));
-        setAuthenticated(true);
-      }
+      setAuthenticated(true);
     } else {
       alert('Please use a valid pin');
     }
 
   };
 
+  const authLogin = async () => {
+    const response = await dispatch({
+      type: 'apiRequest',
+      payload: {
+        url: `api/account/auth`,
+        method: 'GET',
+        onError: 'GLOBAL_MESSAGE',
+        dispatchType: 'authLogin',
+      },
+    }) as unknown as { isAuthLogin: boolean };
+    if(response?.isAuthLogin) {
+      router.push('one');
+    }
+  }
+
+  useEffect(() => {
+    authLogin();
+  }, []);
+
   useEffect(() => {
     if(authenticated) {
-      handleVerify();
+      authLogin();
     }
   }, [authenticated]);
   
@@ -216,8 +207,7 @@ const Login:FC<PageProps> = () => {
                 <ActivityIndicator color="#999" />
               </View> :
               <View>
-                {(isEmailScreen || (isAccountVerified && !isPasswordScreen)) ? <View>
-                  {isAccountVerified ? <AppText>Your account has been created, you can login now.</AppText> : null}
+                {isEmailScreen ? <View>
                   <InputText
                     placeholderText="Enter your email"
                     handleChange={handlChange}
@@ -249,22 +239,6 @@ const Login:FC<PageProps> = () => {
                   >
                     <AppText style={styles.buttonText}>Verify your email</AppText>
                   </TouchableOpacity>
-                </View> : null}
-                {isPasswordScreen ? <View>
-                  <InputText
-                    placeholderText="Enter your password"
-                    handleChange={handlChange}
-                    label={'Password'}
-                    name={'password'}
-                    style={{ marginBottom: 8 }}
-                  />
-                    <TouchableOpacity
-                      style={styles.primaryBtn}
-                      onPress={handleVerify}
-                      activeOpacity={0.8}
-                    >
-                      <AppText style={styles.buttonText}>Continue</AppText>
-                    </TouchableOpacity>
                 </View> : null}
               </View>
             }

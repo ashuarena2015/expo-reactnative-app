@@ -32,10 +32,8 @@ const api =
     try {
       isLoading(true);
 
-      const { url, method, params, dispatchType, body, onSuccess } =
+      const { url, method, params, dispatchType, body = {}, onSuccess } =
         action.payload as ApiRequestPayload;
-
-        alert(JSON.stringify(action.payload));
 
       const response = await axiosInstance(url, {
         params,
@@ -43,6 +41,15 @@ const api =
         data: body,
       });
 
+      if (dispatchType === "authLogin") {
+        dispatch({
+          type: "users/authLogin",
+          payload: {
+            user: response?.data?.user,
+          },
+        });
+        return { isAuthLogin: response?.data?.isAuthLogin };
+      }
       if (dispatchType === "accountCreation") {
         dispatch({
           type: "global/globalMessage",
@@ -57,20 +64,11 @@ const api =
             user: response?.data?.user,
           },
         });
-        const { isVerified, user: { email } = {}, token } = response?.data
-        if(!isVerified && email) {
-          return { isOtpSent: true };
+        const { token, isLoginOtpSent } = response?.data
+        if(isLoginOtpSent) {
+          return { isOtpSent: isLoginOtpSent };
         }
-        return { isVerified: isVerified, token };
-      }
-      if (dispatchType === "userInfo") {
-        dispatch({
-          type: "users/getLoginDetails",
-          payload: {
-            user: response?.data?.user,
-          },
-        });
-        return { isAuth: true, isUser: response?.data?.user };
+        return { token };
       }
     } catch (error: any) {
       if(error?.status !== 403) {
