@@ -5,7 +5,7 @@
  * @format
  */
 
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useEffect, useState, useCallback } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +22,7 @@ import AppText from '../Forms/AppText';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../services/store';
 import InputText from '../Forms/InputText';
+import { useRouter } from 'expo-router';
 
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
@@ -34,13 +35,16 @@ interface PageProps {
   navigation?: any;
 }
 
-const Login:FC<PageProps> = ({ navigation }) => {
+const Login:FC<PageProps> = () => {
+
+  const router = useRouter();
   
   const [isScreenLoading, setIsScreenLoading] = useState(false);
   const [isEmailScreen, setIsEmailScreen] = useState(true);
   const [isOtpScreen, setIsOtpScreen] = useState(false);
   const [isPasswordScreen, setIsPasswordScreen] = useState(false);
   const [isAccountVerified, setIsAccountVerified] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -110,12 +114,6 @@ const Login:FC<PageProps> = ({ navigation }) => {
         return;
       }
       if(response?.isVerified) {
-        console.log(`Saved!\nEmail: ${formInput?.email}\nPassword: ${formInput?.password}`);
-        if (Platform.OS !== 'web') {
-          alert('password saved for mobile authentication')
-          alert(JSON.stringify(formInput?.password));
-          await saveTokenSecurely('password', formInput?.password);
-        }
         setIsPasswordScreen(true);
         setIsEmailScreen(false);
         setIsScreenLoading(false);
@@ -126,6 +124,7 @@ const Login:FC<PageProps> = ({ navigation }) => {
 
   const handleVerify = async () => {
     setIsScreenLoading(true);
+
     const response = await dispatch({
       type: 'apiRequest',
       payload: {
@@ -139,10 +138,13 @@ const Login:FC<PageProps> = ({ navigation }) => {
           password: formInput?.password
         }
       },
-    }) as unknown as { isLogin: boolean, isVerified: boolean };
-    if(response?.isVerified) {
-      // Store credentials securely
-      alert('Your account has been verified. Thankyou!');
+    }) as unknown as { isLogin: boolean, isVerified: boolean, token: string };
+
+    if (response?.isVerified) {
+      setFormInput((prevState) => ({
+        ...prevState,
+        otp: ''
+      }));
       if (Platform.OS !== 'web') {
         await saveTokenSecurely('email', formInput?.email);
       }
@@ -151,31 +153,48 @@ const Login:FC<PageProps> = ({ navigation }) => {
       setIsOtpScreen(false);
       setIsEmailScreen(false);
     }
+
+    if (response?.token) {
+      if (Platform.OS !== 'web') {
+        await saveTokenSecurely('password', formInput?.password);
+      }
+      setAuthenticated(false);
+      router.push('two');
+    }
+
     setIsScreenLoading(false);
   };
-  
+
   // Biometrics Authentication logic
-
-  const [authenticated, setAuthenticated] = useState(false);
-
   const handleBiometricAuth = async () => {
-
+    setAuthenticated(false);
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Authenticate',
       fallbackLabel: 'Use Passcode',
       disableDeviceFallback: false,
     });
     if (result.success) {
-      setAuthenticated(true);
       const responseEmailSecure = await SecureStore.getItemAsync('email');
       const responsePasswordSecure = await SecureStore.getItemAsync('password');
-    
-      alert(`Authenticated!\nEmail: ${responseEmailSecure}\nPassword: ${responsePasswordSecure}`);
+      if(responseEmailSecure && responsePasswordSecure) {
+        setFormInput((prevState) => ({
+          ...prevState,
+          email: responseEmailSecure || '',
+          password: responsePasswordSecure || ''
+        }));
+        setAuthenticated(true);
+      }
     } else {
       alert('Please use a valid pin');
     }
 
   };
+
+  useEffect(() => {
+    if(authenticated) {
+      handleVerify();
+    }
+  }, [authenticated]);
   
   return (
     <KeyboardAvoidingView
@@ -197,7 +216,7 @@ const Login:FC<PageProps> = ({ navigation }) => {
                 <ActivityIndicator color="#999" />
               </View> :
               <View>
-                {(isEmailScreen || isAccountVerified) ? <View>
+                {(isEmailScreen || (isAccountVerified && !isPasswordScreen)) ? <View>
                   {isAccountVerified ? <AppText>Your account has been created, you can login now.</AppText> : null}
                   <InputText
                     placeholderText="Enter your email"

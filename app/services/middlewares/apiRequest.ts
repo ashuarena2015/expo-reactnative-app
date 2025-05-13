@@ -35,6 +35,8 @@ const api =
       const { url, method, params, dispatchType, body, onSuccess } =
         action.payload as ApiRequestPayload;
 
+        alert(JSON.stringify(action.payload));
+
       const response = await axiosInstance(url, {
         params,
         method,
@@ -55,11 +57,11 @@ const api =
             user: response?.data?.user,
           },
         });
-        const { isVerified, user: { email } = {} } = response?.data
+        const { isVerified, user: { email } = {}, token } = response?.data
         if(!isVerified && email) {
           return { isOtpSent: true };
         }
-        return { isVerified: isVerified };
+        return { isVerified: isVerified, token };
       }
       if (dispatchType === "userInfo") {
         dispatch({
