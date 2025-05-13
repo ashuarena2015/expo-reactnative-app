@@ -65,6 +65,7 @@ const api =
           },
         });
         const { token, isLoginOtpSent } = response?.data
+        console.log('response?.data', response?.data);
         if(isLoginOtpSent) {
           return { isOtpSent: isLoginOtpSent };
         }

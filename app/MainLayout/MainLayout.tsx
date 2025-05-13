@@ -1,11 +1,12 @@
 import React, { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MainLayout = ({ children }: { children: ReactNode }) => {
     return (
-        <View style={styles.sectionContainer}>
+        <SafeAreaView style={styles.sectionContainer}>
             {children}
-        </View>
+        </SafeAreaView>
     )
 }
 

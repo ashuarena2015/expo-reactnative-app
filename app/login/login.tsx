@@ -30,6 +30,7 @@ import * as SecureStore from 'expo-secure-store';
 // Icons
 import Icon from 'react-native-vector-icons/FontAwesome5';
 
+console.log({Platform});
 
 interface PageProps {
   navigation?: any;
@@ -135,12 +136,14 @@ const Login:FC<PageProps> = () => {
       }));
       if (Platform.OS !== 'web') {
         await saveTokenSecurely('isUserVerified', 'true');
+        await saveTokenSecurely('email', formInput?.email);
       }
       setAuthenticated(false);
       setIsScreenLoading(false);
       setIsOtpScreen(false);
       setIsEmailScreen(false);
-      router.push('two');
+      alert('token generated')
+      router.push('/one');
     }
 
     setIsScreenLoading(false);
@@ -156,6 +159,8 @@ const Login:FC<PageProps> = () => {
     });
     if (result.success) {
       setAuthenticated(true);
+      const savedEmail = await SecureStore.getItemAsync('email');
+      alert(JSON.stringify(savedEmail));
     } else {
       alert('Please use a valid pin');
     }
@@ -173,7 +178,7 @@ const Login:FC<PageProps> = () => {
       },
     }) as unknown as { isAuthLogin: boolean };
     if(response?.isAuthLogin) {
-      router.push('one');
+      router.push('/one');
     }
   }
 
@@ -249,23 +254,28 @@ const Login:FC<PageProps> = () => {
             >
               <AppText style={styles.buttonText}>Continue with Google</AppText>
             </TouchableOpacity>
-            <Pressable
-              onPress={handleBiometricAuth}
-              style={({ pressed }) => [
-                {
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  marginTop: 20,
-                  opacity: pressed ? 0.6 : 1,
-                  transform: [{ scale: pressed ? 0.95 : 1 }],
-                },
-              ]}
-            >
-              <Icon name="user-lock" size={50} color="#27548A" />
-            </Pressable>
-            <View style={{ alignItems: 'center' }}>
-              <AppText>Try login with authentication</AppText>
-            </View>
+            {Platform.OS !== 'web' ?
+              <View>
+                <Pressable
+                  onPress={handleBiometricAuth}
+                  style={({ pressed }) => [
+                    {
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      marginTop: 20,
+                      opacity: pressed ? 0.6 : 1,
+                      transform: [{ scale: pressed ? 0.95 : 1 }],
+                    },
+                  ]}
+                >
+                  <Icon name="user-lock" size={50} color="#27548A" />
+                </Pressable>
+                <View style={{ alignItems: 'center' }}>
+                  <AppText>Try login with authentication</AppText>
+                </View>
+              </View> :
+              <View style={{ marginBottom: 24 }}></View>
+            }
           </View>
           <AppText style={{ color: '#fff' }}>By continuing you agree to Terms of Services and Privacy Policy</AppText>
         </View>
